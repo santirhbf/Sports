@@ -2,7 +2,7 @@
 import argparse
 from typing import Dict, Any
 import logging
-from rag_engine import RAGEngine
+from rag_engine_updated import RAGEngine
 from document_parser import DocumentProcessor, get_processing_status
 
 # Configure logging
