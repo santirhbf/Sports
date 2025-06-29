@@ -9,11 +9,7 @@ from document_parser import DocumentProcessor, get_processing_status
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler('civil_code_rag.log')
-    ]
-)
+    handlers=[logging.StreamHandler(),logging.FileHandler('civil_code_rag.log')])
 logger = logging.getLogger(__name__)
 
 def setup_system():
@@ -166,10 +162,7 @@ Note: This simplified version uses only Gemini 2.0 Flash and free translation se
 
 def main():
     """Main entry point"""
-    parser = argparse.ArgumentParser(
-        description="Player Performance Query System",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+    parser = argparse.ArgumentParser(description="Player Performance Query System",formatter_class=argparse.RawDescriptionHelpFormatter,epilog="""
 Examples:
   python main.py --setup                 # Initial setup
   python main.py --init-vectors          # Initialize vector stores
@@ -179,24 +172,15 @@ Examples:
         """
     )
     
-    parser.add_argument('--setup', action='store_true', 
-                       help='Setup and validate system configuration')
-    parser.add_argument('--init-vectors', action='store_true',
-                       help='Initialize vector stores for all countries')
-    parser.add_argument('--force-recreate', action='store_true',
-                       help='Force recreate vector stores even if they exist')
-    parser.add_argument('--test', action='store_true',
-                       help='Run system tests')
-    parser.add_argument('--query', type=str,
-                       help='Single query to process')
-    parser.add_argument('--country', type=str,
-                       help='Specific country to query (use with --query)')
-    parser.add_argument('--interactive', action='store_true',
-                       help='Start interactive query mode')
-    parser.add_argument('--output', type=str,
-                       help='Output file for results (JSON format)')
-    parser.add_argument('--verbose', action='store_true',
-                       help='Enable verbose output')
+    parser.add_argument('--setup', action='store_true', help='Setup and validate system configuration')
+    parser.add_argument('--init-vectors', action='store_true', help='Initialize vector stores for all countries')
+    parser.add_argument('--force-recreate', action='store_true', help='Force recreate vector stores even if they exist')
+    parser.add_argument('--test', action='store_true', help='Run system tests')
+    parser.add_argument('--query', type=str, help='Single query to process')
+    parser.add_argument('--country', type=str, help='Specific country to query (use with --query)')
+    parser.add_argument('--interactive', action='store_true', help='Start interactive query mode')
+    parser.add_argument('--output', type=str, help='Output file for results (JSON format)')
+    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
     
     args = parser.parse_args()
     
@@ -225,10 +209,6 @@ Examples:
         test_country_classification()
         return
     
-    
-    
-    
-    
     if args.query:
         if not setup_system():
             sys.exit(1)
@@ -237,7 +217,6 @@ Examples:
             rag_engine = RAGEngine()
         
         # Process query
-        
             result = rag_engine.query_single_country(args.query, args.country)
         else:
             result = rag_engine.query_player_data(args.query)
