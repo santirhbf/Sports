@@ -187,8 +187,6 @@ Examples:
                        help='Force recreate vector stores even if they exist')
     parser.add_argument('--test', action='store_true',
                        help='Run system tests')
-    parser.add_argument('                       help='Test translation functionality')
-    parser.add_argument('                       help='Test country classification')
     parser.add_argument('--query', type=str,
                        help='Single query to process')
     parser.add_argument('--country', type=str,
