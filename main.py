@@ -2,7 +2,7 @@
 import argparse
 from typing import Dict, Any
 import logging
-from rag_engine_updated import RAGEngine
+import rag_engine_updated
 from document_parser import DocumentProcessor, get_processing_status
 
 # Configure logging
@@ -44,7 +44,7 @@ def interactive_query():
     print("Type 'quit' to exit, 'help' for commands")
     print("-" * 40)
     
-    rag_engine = RAGEngine()
+    rag_engine = rag_engine.RAGEngine()
     
     while True:
         try:
@@ -214,7 +214,7 @@ Examples:
             sys.exit(1)
         
         # Initialize RAG engine
-            rag_engine = RAGEngine()
+            rag_engine = rag_engine_updated.RAGEngine()
         
         # Process query
             result = rag_engine.query_single_country(args.query, args.country)
