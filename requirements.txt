@@ -1,60 +1,43 @@
 # Core Streamlit Framework
-streamlit>=1.28.0
+streamlit==1.28.0
 
 # RAG (Retrieval-Augmented Generation) Dependencies
-# Vector database and embeddings
-chromadb>=0.4.0
-sentence-transformers>=2.2.0
-langchain>=0.1.0
-langchain-community>=0.0.20
-faiss-cpu>=1.7.4
+chromadb==0.4.15
+sentence-transformers==2.2.2
+langchain==0.1.0
+langchain-community==0.0.20
+faiss-cpu==1.7.4
 
 # LLM Integration
-openai>=1.0.0
-# Alternative LLM providers (uncomment if needed)
-# anthropic>=0.7.0
-# cohere>=4.21.0
+openai==1.3.0
 
 # Document Processing
-PyPDF2>=3.0.0
-python-docx>=0.8.11
-python-pptx>=0.6.21
-openpyxl>=3.1.0
-pandas>=1.5.0
-pypdf>=3.15.0
-pdfplumber>=0.9.0
+PyPDF2==3.0.1
+python-docx==0.8.11
+python-pptx==0.6.21
+openpyxl==3.1.2
+pandas==1.5.3
+pypdf==3.17.0
+pdfplumber==0.9.0
 
 # Text Processing and NLP
-nltk>=3.8.0
-spacy>=3.6.0
-transformers>=4.30.0
-torch>=2.0.0
-# For CPU-only deployment (lighter weight)
-# torch>=2.0.0+cpu --index-url https://download.pytorch.org/whl/cpu
+nltk==3.8.1
+transformers==4.35.0
+torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
+torchvision==0.16.0 --index-url https://download.pytorch.org/whl/cpu
+torchaudio==2.1.0 --index-url https://download.pytorch.org/whl/cpu
 
 # Core Python Libraries
-numpy>=1.24.0
-requests>=2.28.0
-beautifulsoup4>=4.11.0
-lxml>=4.9.0
+numpy==1.24.3
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==4.9.3
 
-# Logging and Configuration
-python-dotenv>=1.0.0
+# Configuration
+python-dotenv==1.0.0
 
-# File handling and utilities
-pathlib2>=2.3.7
-typing-extensions>=4.5.0
+# File handling utilities
+typing-extensions==4.8.0
 
-# Database and Storage
-sqlalchemy>=2.0.0
-sqlite3
-
-# Additional Streamlit Components
-streamlit-chat>=0.1.1
-streamlit-option-menu>=0.3.0
-
-# Caching and Performance
-streamlit-cache>=0.1.0
-
-# Deployment
-gunicorn>=20.1.0
+# Database
+sqlalchemy==2.0.23
