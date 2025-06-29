@@ -234,7 +234,7 @@ Examples:
             sys.exit(1)
         
         # Initialize RAG engine
-        rag_engine = RAGEngine()
+            rag_engine = RAGEngine()
         
         # Process query
         
