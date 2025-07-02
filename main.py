@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from langchain.embeddings import HuggingFaceEmbeddings
-from langchain.vectorstores import Chroma
+from langchain.vectorstores import FAISS
 from langchain.llms import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import CharacterTextSplitter
@@ -9,11 +9,11 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 import torch
 import os
 from fpdf import FPDF
+from langchain.prompts import PromptTemplate
 
-# --- CONFIGURACION ---
+# --- CONFIGURACIÓN ---
 CSV_PATH = "data/processed/merged_df.csv"
-DB_DIR = "chroma_db"
-MODEL_NAME = "google/flan-t5-base"  # Modelo Hugging Face instruct-compatible
+MODEL_NAME = "google/flan-t5-base"
 
 # --- CARGA DE DATOS ---
 st.set_page_config(page_title="RAG para Preparadores Físicos", layout="wide")
@@ -24,29 +24,24 @@ section = st.sidebar.radio("Ir a:", ["Explorador de Datos", "Consultas al LLM", 
 
 df = pd.read_csv(CSV_PATH)
 
-# --- CREAR INDEX VECTORIAL SI NO EXISTE ---
+# --- CREAR INDEX VECTORIAL EN MEMORIA ---
 def create_vector_index():
-    if not os.path.exists(DB_DIR):
-        os.makedirs(DB_DIR)
-        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
-        texts = []
-        for _, row in df.iterrows():
-            texto = f"El día {row['date']}, el valor de recuperación (emboss_baseline_score) fue {row.get('emboss_baseline_score', 'N/A')}. " \
-                     f"Los biomarcadores (bio_baseline_composite) estaban en {row.get('bio_baseline_composite', 'N/A')}. " \
-                     f"La distancia recorrida fue de {row.get('distance', 'N/A')} metros. " \
-                     f"El número de aceleraciones fuertes fue {row.get('accel_decel_over_4_5', 'N/A')}."
-            texts.append(texto)
-        docs = text_splitter.create_documents(texts)
-
-        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        Chroma.from_documents(documents=docs, embedding=embeddings)
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
+    texts = []
+    for _, row in df.iterrows():
+        texto = f"El día {row['date']}, el valor de recuperación (emboss_baseline_score) fue {row.get('emboss_baseline_score', 'N/A')}. " \
+                f"Los biomarcadores (bio_baseline_composite) estaban en {row.get('bio_baseline_composite', 'N/A')}. " \
+                f"La distancia recorrida fue de {row.get('distance', 'N/A')} metros. " \
+                f"El número de aceleraciones fuertes fue {row.get('accel_decel_over_4_5', 'N/A')}."
+        texts.append(texto)
+    docs = text_splitter.create_documents(texts)
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    return FAISS.from_documents(docs, embeddings)
 
 # --- CARGA DEL MODELO Y RAG ---
 @st.cache_resource
 def load_qa_chain():
-    create_vector_index()
-    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vectordb = Chroma(embedding_function=embeddings)
+    vectordb = create_vector_index()
     retriever = vectordb.as_retriever()
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
@@ -63,13 +58,11 @@ def load_qa_chain():
     )
     llm = HuggingFacePipeline(pipeline=pipe)
 
-    from langchain.prompts import PromptTemplate
-
     prompt_template = PromptTemplate(
         input_variables=["context", "question"],
         template="""
         Usa la siguiente información del jugador para responder la pregunta en español.
-        Si no sabes la respuesta, responde \"No tengo suficiente información.\".
+        Si no sabes la respuesta, responde "No tengo suficiente información.".
 
         Contexto:
         {context}
@@ -81,16 +74,15 @@ def load_qa_chain():
         """
     )
 
-    qa_chain = RetrievalQA.from_chain_type(
+    return RetrievalQA.from_chain_type(
         llm=llm,
         retriever=retriever,
         return_source_documents=False,
         chain_type="stuff",
         chain_type_kwargs={"prompt": prompt_template}
     )
-    return qa_chain
 
-# --- SECCION: EXPLORADOR DE DATOS ---
+# --- SECCIÓN: EXPLORADOR DE DATOS ---
 if section == "Explorador de Datos":
     st.subheader("📊 Datos de Rendimiento y Recuperación")
     st.dataframe(df, use_container_width=True)
@@ -98,7 +90,7 @@ if section == "Explorador de Datos":
     if st.checkbox("Mostrar descripción de columnas"):
         st.write(df.describe(include='all'))
 
-# --- SECCION: CONSULTAS AL LLM ---
+# --- SECCIÓN: CONSULTAS AL LLM ---
 elif section == "Consultas al LLM":
     st.subheader("💬 Haz una pregunta sobre el rendimiento o recuperación")
     qa = load_qa_chain()
@@ -138,7 +130,7 @@ elif section == "Consultas al LLM":
             with open(pdf_output, "rb") as f:
                 st.download_button("Haz clic aquí para guardar el PDF", f, file_name=pdf_output)
 
-# --- SECCION: RECOMENDACIONES ---
+# --- SECCIÓN: RECOMENDACIONES ---
 elif section == "Recomendaciones":
     st.subheader("📌 Recomendaciones del sistema")
 
