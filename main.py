@@ -17,7 +17,7 @@ MODEL_NAME = "google/flan-t5-base"  # Modelo Hugging Face instruct-compatible
 
 # --- CARGA DE DATOS ---
 st.set_page_config(page_title="CoachLens", layout="wide")
-st.title("RAG-powered Assistant for Elite Football Performance Data")
+st.title("Your personal Assistant for Elite Football Performance")
 
 st.sidebar.header("Navigation")
 section = st.sidebar.radio("Go to:", ["Data Explorer", "CoachLens", "Recommendations"])
