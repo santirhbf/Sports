@@ -8,3 +8,4 @@ fpdf
 sentence-transformers
 langchain-community>=0.0.24
 protobuf==3.20.*
+faiss-cpu
