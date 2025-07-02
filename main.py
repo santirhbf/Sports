@@ -96,7 +96,7 @@ if section == "Data Explorer":
 
 # --- SECCIÓN: CONSULTAS AL LLM ---
 elif section == "CoachLens":
-    st.subheader("💬 Aks me anything!")
+    st.subheader("💬 Ask me anything!")
     qa = load_qa_chain()
 
     st.markdown("**Question examples:**")
