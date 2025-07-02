@@ -6,7 +6,6 @@ from langchain.llms import HuggingFacePipeline
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import CharacterTextSplitter
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
-import torch
 import os
 from fpdf import FPDF
 
