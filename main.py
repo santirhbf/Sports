@@ -89,10 +89,16 @@ def load_qa_chain():
 # --- SECCIÓN: EXPLORADOR DE DATOS ---
 if section == "Data Explorer":
     st.subheader("📊 Performance and Recovery Data")
+    uploaded_file = st.file_uploader("Upload a file", type=["csv"])
+    if uploaded_file is not None:
+        df=uploaded_file
     st.dataframe(df, use_container_width=True)
 
     if st.checkbox("Show metadata"):
         st.write(df.describe(include='all'))
+
+    
+    
 
 # --- SECCIÓN: CONSULTAS AL LLM ---
 elif section == "CoachLens":
