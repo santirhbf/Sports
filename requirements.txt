@@ -3,6 +3,7 @@ pandas
 langchain>=0.1.14
 chromadb>=0.4.24
 transformers>=4.41.1
+torch>=2.1.0
 fpdf
 sentence-transformers
 langchain-community>=0.0.24
