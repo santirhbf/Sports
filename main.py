@@ -45,14 +45,14 @@ def create_vector_index():
         docs = text_splitter.create_documents(texts)
 
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        Chroma.from_documents(documents=docs, embedding=embeddings, persist_directory=DB_DIR)
+        Chroma.from_documents(documents=docs, embedding=embeddings)
 
 # --- CARGA DEL MODELO Y RAG ---
 @st.cache_resource
 def load_qa_chain():
     create_vector_index()
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-    vectordb = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
+    vectordb = Chroma(embedding_function=embeddings)
     retriever = vectordb.as_retriever()
 
     tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
