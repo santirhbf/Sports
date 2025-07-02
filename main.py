@@ -16,11 +16,11 @@ CSV_PATH = "data/processed/merged_df.csv"
 MODEL_NAME = "google/flan-t5-base"
 
 # --- CARGA DE DATOS ---
-st.set_page_config(page_title="RAG para Preparadores Físicos", layout="wide")
-st.title("⚽ RAG App para Análisis de Rendimiento y Recuperación")
+st.set_page_config(page_title="CoachLens", layout="wide")
+st.title("Your personal Assistant for Elite Football Performance")
 
-st.sidebar.header("Navegación")
-section = st.sidebar.radio("Ir a:", ["Explorador de Datos", "Consultas al LLM", "Recomendaciones"])
+st.sidebar.header("Navigation")
+section = st.sidebar.radio("Go to:", ["Data Explorer", "CoachLens", "Recommendations"])
 
 df = pd.read_csv(CSV_PATH)
 
@@ -29,10 +29,10 @@ def create_vector_index():
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
     texts = []
     for _, row in df.iterrows():
-        texto = f"El día {row['date']}, el valor de recuperación (emboss_baseline_score) fue {row.get('emboss_baseline_score', 'N/A')}. " \
-                f"Los biomarcadores (bio_baseline_composite) estaban en {row.get('bio_baseline_composite', 'N/A')}. " \
-                f"La distancia recorrida fue de {row.get('distance', 'N/A')} metros. " \
-                f"El número de aceleraciones fuertes fue {row.get('accel_decel_over_4_5', 'N/A')}."
+        texto = f"The day {row['date']}, the recovery value (emboss_baseline_score) was {row.get('emboss_baseline_score', 'N/A')}. " \
+                f"The bio_baseline_composite were around {row.get('bio_baseline_composite', 'N/A')}. " \
+                f"The travelled distance was {row.get('distance', 'N/A')} meters. " \
+                f"The number of accelerations was {row.get('accel_decel_over_4_5', 'N/A')}."
         texts.append(texto)
     docs = text_splitter.create_documents(texts)
     embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
@@ -61,16 +61,16 @@ def load_qa_chain():
     prompt_template = PromptTemplate(
         input_variables=["context", "question"],
         template="""
-        Usa la siguiente información del jugador para responder la pregunta en español.
-        Si no sabes la respuesta, responde "No tengo suficiente información.".
+        Use the next information about the player to answer the question.
+        If you do not know the answer, answer this instead: "Insufficient information."
 
-        Contexto:
+        Context:
         {context}
 
-        Pregunta:
+        Question::
         {question}
 
-        Respuesta:
+        Answer::
         """
     )
 
@@ -83,68 +83,65 @@ def load_qa_chain():
     )
 
 # --- SECCIÓN: EXPLORADOR DE DATOS ---
-if section == "Explorador de Datos":
-    st.subheader("📊 Datos de Rendimiento y Recuperación")
+if section == "Data Explorer":
+    st.subheader("📊 Performance and Recovery Data")
     st.dataframe(df, use_container_width=True)
 
-    if st.checkbox("Mostrar descripción de columnas"):
+    if st.checkbox("Show metadata"):
         st.write(df.describe(include='all'))
 
 # --- SECCIÓN: CONSULTAS AL LLM ---
-elif section == "Consultas al LLM":
-    st.subheader("💬 Haz una pregunta sobre el rendimiento o recuperación")
+elif section == "CoachLens":
+    st.subheader("💬 Aks me anything!")
     qa = load_qa_chain()
 
-    st.markdown("**Ejemplos de preguntas que puedes hacer:**")
+    st.markdown("**Question examples:**")
     example_questions = [
-        "¿Cómo estuvo la recuperación del jugador el 1 de octubre de 2023?",
-        "¿Qué métricas fueron más altas el día después del partido contra Arsenal?",
-        "¿Qué día tuvo el valor más bajo en emboss_baseline_score?",
-        "¿Cuándo fue alta la aceleración/desaceleración?",
-        "¿Qué días superó los 7000 metros con baja calidad muscular?",
-        "¿Cuál fue la evolución del estado de recuperación en la última semana?"
+        "How was the player's recovery on the first of October of 2023?",
+        "Which were the highest metrics the day after the match against Arsenal?",
+        "What day was the lowest emboss_baseline_score?"
     ]
 
     response = ""
     for q in example_questions:
         if st.button(q):
             user_query = q
-            with st.spinner("Pensando..."):
+            with st.spinner("Reasoning..."):
                 response = qa.run(user_query)
                 st.success(response)
 
-    user_query = st.text_input("O escribe tu propia pregunta:")
+    user_query = st.text_input("Ask away:")
     if user_query:
-        with st.spinner("Pensando..."):
+        with st.spinner("Reasoning..."):
             response = qa.run(user_query)
             st.success(response)
 
     if response:
-        if st.button("📄 Descargar respuesta en PDF"):
+        if st.button("📄 Download the answer in PDF"):
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
             pdf.multi_cell(0, 10, txt=response)
-            pdf_output = "respuesta_llm.pdf"
+            pdf_output = "CoachLens_Answer.pdf"
             pdf.output(pdf_output)
             with open(pdf_output, "rb") as f:
-                st.download_button("Haz clic aquí para guardar el PDF", f, file_name=pdf_output)
+                st.download_button("Click here to download the PDF", f, file_name=pdf_output)
 
 # --- SECCIÓN: RECOMENDACIONES ---
-elif section == "Recomendaciones":
-    st.subheader("📌 Recomendaciones del sistema")
+elif section == "Recommendations":
+    st.subheader("📌 System Recommendations")
 
     latest = df.sort_values("date", ascending=False).head(1).squeeze()
     recs = []
 
     if latest.get("emboss_baseline_score", 0) < -0.4:
-        recs.append("🛌 El score de recuperación está bajo. Se recomienda una sesión de recuperación activa o descanso.")
+        recs.append("🛌 The recovery score is low.An active recovery or a good rest are recommended.")
 
     if latest.get("accel_decel_over_4_5", 0) > 50:
-        recs.append("⚠️ Alta carga acelerativa detectada. Considerar monitoreo adicional para evitar fatiga.")
+        recs.append("⚠️ High accelerative load detected. Consider additional monitoring to avoid heavy fatigue.")
 
     if not recs:
-        recs.append("✅ Todo parece dentro de los parámetros normales. Seguir con el plan habitual.")
+        recs.append("✅ Everything seems inside the normal parameters.Keep up the good work!")
 
     for r in recs:
         st.write(r)
