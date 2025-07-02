@@ -84,3 +84,10 @@ The project uses simulated but realistic datasets provided publicly by Chelsea F
 ## 📄 License & Acknowledgments
 
 This project is based on data provided by the **Chelsea FC Performance Insights Vizathon** and is used strictly for academic and non-commercial purposes. All data remains the property of its original creators.
+
+---
+
+## Streamlit Link
+
+https://sports-hi4xanpp426fs6sc6z8lqy.streamlit.app/
+
