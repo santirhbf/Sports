@@ -66,7 +66,7 @@ def load_qa_chain():
         input_variables=["context", "question"],
         template="""
         Use the next information about the player to answer the question.
-        If you do not know the answer, answer this instead: "Insufficient information."
+        If you do not know the answer, answer this instead: "I am not designed to answer these type of questions, please review the question and try again. Here is a suggestion: What day was the lowest Recovery Score?"
 
         Context:
         {context}
@@ -109,7 +109,7 @@ elif section == "CoachLens":
     example_questions = [
         "How was the player's recovery on the first of October of 2023?",
         "Which were the highest metrics the day after the match against Arsenal?",
-        "What day was the lowest emboss_baseline_score?"
+        "What day was the lowest Recovery Score?"
     ]
 
     response = ""
@@ -151,7 +151,7 @@ elif section == "Recommendations":
         recs.append("⚠️ High accelerative load detected. Consider additional monitoring to avoid heavy fatigue.")
 
     if not recs:
-        recs.append("✅ Everything seems inside the normal parameters.Keep up the good work!")
+        recs.append("✅ Everything seems inside the normal parameters. Keep up the good work!")
 
     for r in recs:
         st.write(r)
