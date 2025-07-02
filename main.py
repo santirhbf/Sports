@@ -1,279 +1,158 @@
-#!/usr/bin/env python3
-import argparse
-from typing import Dict, Any
-import logging
-import rag_engine_updated
-from document_parser import DocumentProcessor, get_processing_status
+import streamlit as st
+import pandas as pd
+from langchain.embeddings import HuggingFaceEmbeddings
+from langchain.vectorstores import Chroma
+from langchain.llms import HuggingFacePipeline
+from langchain.chains import RetrievalQA
+from langchain.text_splitter import CharacterTextSplitter
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+import torch
+import os
+from fpdf import FPDF
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(),logging.FileHandler('civil_code_rag.log')])
-logger = logging.getLogger(__name__)
+# --- CONFIGURACION ---
+CSV_PATH = "data/processed/merged_df.csv"
+DB_DIR = "chroma_db"
+MODEL_NAME = "google/flan-t5-base"  # Modelo Hugging Face instruct-compatible
 
-def setup_system():
-    return True
+# --- CARGA DE DATOS ---
+st.set_page_config(page_title="RAG para Preparadores Físicos", layout="wide")
+st.title("⚽ RAG App para Análisis de Rendimiento y Recuperación")
 
-def initialize_vector_stores(force_recreate: bool = False):
-    """Initialize vector stores for all countries"""
-    print("\n📚 Initializing document processing...")
-    
-    doc_processor = DocumentProcessor()
-    
-    # Check current status
-    status = get_processing_status()
-    
-    if not force_recreate and all(status.values()):
-        print("✅ All vector stores already exist")
-        return doc_processor
-    
-    print("🔄 Creating vector stores (this may take a while)...")
-    
-    try:
-        doc_processor.initialize_all_vector_stores(force_recreate)
-        print("✅ Vector stores initialized successfully")
-        return doc_processor
-    except Exception as e:
-        print(f"❌ Error initializing vector stores: {e}")
-        return None
+st.sidebar.header("Navegación")
+section = st.sidebar.radio("Ir a:", ["Explorador de Datos", "Consultas al LLM", "Recomendaciones"])
 
-def interactive_query():
-    """Interactive query interface"""
-    print("\n💬 Interactive Query Mode")
-    print("Type 'quit' to exit, 'help' for commands")
-    print("-" * 40)
-    
-    rag_engine = rag_engine.RAGEngine()
-    
-    while True:
-        try:
-            query = input("\n🤔 Your question: ").strip()
-            
-            if query.lower() in ['quit', 'exit', 'q']:
-                print("👋 Goodbye!")
-                break
-            
-            if query.lower() == 'help':
-                print_help()
-                continue
-            
-            if not query:
-                continue
-            
-            print("🔍 Processing your query with Gemini 2.0 Flash...")
-            
-            # Process query
-            result = rag_engine.query_with_country_detection(query)
-            
-            # Display results
-            display_player_result(result)
-            
-        except KeyboardInterrupt:
-            print("\n👋 Goodbye!")
-            break
-        except Exception as e:
-            print(f"❌ Error processing query: {e}")
-            logger.error(f"Query processing error: {e}", exc_info=True)
+df = pd.read_csv(CSV_PATH)
 
-def display_query_results(result: Dict[str, Any]):
-    """Display query results in a formatted way"""
-    print("\n" + "=" * 60)
-    print("📋 QUERY RESULTS")
-    print("=" * 60)
-    
-    # Country detection info
-    if "country_detection" in result:
-        detection = result["country_detection"]
-        print(f"🎯 Country Detection:")
-        print(f"   Predicted: {detection['predicted_country']}")
-        print(f"   Confidence: {detection['confidence']:.2f}")
-        print(f"   Strategy: {detection['search_strategy']}")
-        
-        if detection['search_strategy'] == 'multiple_countries':
-            print(f"   Countries searched: {', '.join(detection['searched_countries'])}")
-    
-    # Results
-    if "results_by_country" in result:
-        # Multiple countries
-        for country, country_result in result["results_by_country"].items():
-            print(f"\n🏛️  {country.upper()} RESULTS:")
-            display_single_country_result(country_result)
-    else:
-        # Single country
-        display_single_country_result(result)
+# --- CREAR INDEX VECTORIAL SI NO EXISTE ---
+def create_vector_index():
+    if not os.path.exists(DB_DIR):
+        os.makedirs(DB_DIR)
+        text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=50)
+        texts = []
+        for _, row in df.iterrows():
+            texto = f"El día {row['date']}, el valor de recuperación (emboss_baseline_score) fue {row.get('emboss_baseline_score', 'N/A')}. " \
+                     f"Los biomarcadores (bio_baseline_composite) estaban en {row.get('bio_baseline_composite', 'N/A')}. " \
+                     f"La distancia recorrida fue de {row.get('distance', 'N/A')} metros. " \
+                     f"El número de aceleraciones fuertes fue {row.get('accel_decel_over_4_5', 'N/A')}."
+            texts.append(texto)
+        docs = text_splitter.create_documents(texts)
 
-def display_single_country_result(result: Dict[str, Any]):
-    """Display results for a single country"""
-    if "error" in result:
-        print(f"❌ Error: {result['error']}")
-        return
-    
-    # Translation info
-    if result.get("translated_query") and result.get("translated_query") != result.get("original_query"):
-        print(f"🌐 Query translated: {result['original_query']} -> {result['translated_query']}")
-    
-    # Gemini response
-    if "gemini_response" in result:
-        response = result["gemini_response"]
-        print(f"\n🤖 Gemini 2.0 Flash Response:")
-        
-        if response.get("error"):
-            print(f"❌ Error: {response['error']}")
-        else:
-            print(f"⏱️  Processing time: {response['processing_time']:.2f}s")
-            
-            # Show translated response if different from original
-            if response.get("translated_response") != response.get("original_response"):
-                print(f"📝 Translated Response:\n{response['translated_response']}")
-                print(f"\n📝 Original Response:\n{response['original_response']}")
-            else:
-                print(f"📝 Response:\n{response['translated_response']}")
-    
-    # Context info
-    if result.get("source_info"):
-        print(f"\n📚 Sources used: {len(result['source_info'])} document chunks")
+        embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+        Chroma.from_documents(documents=docs, embedding=embeddings, persist_directory=DB_DIR)
 
-def print_help():
-    """Print help information"""
-    print("""
-Available commands:
-- Just type your legal question in any supported language
-- 'quit' or 'exit' - Exit the program
-- 'help' - Show this help
+# --- CARGA DEL MODELO Y RAG ---
+@st.cache_resource
+def load_qa_chain():
+    create_vector_index()
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    vectordb = Chroma(persist_directory=DB_DIR, embedding_function=embeddings)
+    retriever = vectordb.as_retriever()
 
-Supported languages:
-- French (France)
-- German (Germany)  
-- Italian (Italy)
-- Spanish (Spain)
-- Portuguese (Portugal)
-- English (queries will be translated to appropriate language)
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
 
-Example queries:
-- "What is property law?"
-- "Qu'est-ce que le droit de propriété?"
-- "Was ist Eigentumsrecht?"
-- "Qual è il diritto di proprietà?"
-- "¿Cuál es el derecho de propiedad?"
+    pipe = pipeline(
+        "text2text-generation",
+        model=model,
+        tokenizer=tokenizer,
+        device=-1,
+        max_new_tokens=256,
+        temperature=0.3,
+        top_p=0.9
+    )
+    llm = HuggingFacePipeline(pipeline=pipe)
 
-Note: This simplified version uses only Gemini 2.0 Flash and free translation services.
-""")
+    from langchain.prompts import PromptTemplate
 
-def main():
-    """Main entry point"""
-    parser = argparse.ArgumentParser(description="Player Performance Query System",formatter_class=argparse.RawDescriptionHelpFormatter,epilog="""
-Examples:
-  python main.py --setup                 # Initial setup
-  python main.py --init-vectors          # Initialize vector stores
-  python main.py --test                  # Run all tests
-  python main.py --query "What is property law?"  # Single query
-  python main.py --interactive           # Interactive mode
+    prompt_template = PromptTemplate(
+        input_variables=["context", "question"],
+        template="""
+        Usa la siguiente información del jugador para responder la pregunta en español.
+        Si no sabes la respuesta, responde \"No tengo suficiente información.\".
+
+        Contexto:
+        {context}
+
+        Pregunta:
+        {question}
+
+        Respuesta:
         """
     )
-    
-    parser.add_argument('--setup', action='store_true', help='Setup and validate system configuration')
-    parser.add_argument('--init-vectors', action='store_true', help='Initialize vector stores for all countries')
-    parser.add_argument('--force-recreate', action='store_true', help='Force recreate vector stores even if they exist')
-    parser.add_argument('--test', action='store_true', help='Run system tests')
-    parser.add_argument('--query', type=str, help='Single query to process')
-    parser.add_argument('--country', type=str, help='Specific country to query (use with --query)')
-    parser.add_argument('--interactive', action='store_true', help='Start interactive query mode')
-    parser.add_argument('--output', type=str, help='Output file for results (JSON format)')
-    parser.add_argument('--verbose', action='store_true', help='Enable verbose output')
-    
-    args = parser.parse_args()
-    
-    # Set logging level
-    if args.verbose:
-        logging.getLogger().setLevel(logging.DEBUG)
-    
-    # Handle different modes
-    if args.setup:
-        if not setup_system():
-            sys.exit(1)
-        return
-    
-    if args.init_vectors:
-        if not setup_system():
-            sys.exit(1)
-        doc_processor = initialize_vector_stores(args.force_recreate)
-        if not doc_processor:
-            sys.exit(1)
-        return
-    
-    if args.test:
-        if not setup_system():
-            sys.exit(1)
-        test_translation()
-        test_country_classification()
-        return
-    
-    if args.query:
-        if not setup_system():
-            sys.exit(1)
-        
-        # Initialize RAG engine
-            rag_engine = rag_engine_updated.RAGEngine()
-        
-        # Process query
-            result = rag_engine.query_single_country(args.query, args.country)
-        else:
-            result = rag_engine.query_player_data(args.query)
-        
-        # Output results
-        if args.output:
-            with open(args.output, 'w', encoding='utf-8') as f:
-                # Convert complex objects to JSON-serializable format
-                serializable_result = convert_to_serializable(result)
-                json.dump(serializable_result, f, indent=2, ensure_ascii=False)
-            print(f"✅ Results saved to {args.output}")
-        else:
-            display_player_result(result)
-        return
-    
-    if args.interactive:
-        if not setup_system():
-            sys.exit(1)
-        interactive_query()
-        return
-    
-    # Default: show help
-    parser.print_help()
 
-def convert_to_serializable(obj):
-    """Convert complex objects to JSON-serializable format"""
-    if hasattr(obj, '__dict__'):
-        # Convert objects with __dict__ to dictionary
-        result = {}
-        for key, value in obj.__dict__.items():
-            if key.startswith('_'):
-                continue  # Skip private attributes
-            if callable(value):
-                continue  # Skip methods
-            result[key] = convert_to_serializable(value)
-        return result
-    elif isinstance(obj, dict):
-        return {key: convert_to_serializable(value) for key, value in obj.items()}
-    elif isinstance(obj, (list, tuple)):
-        return [convert_to_serializable(item) for item in obj]
-    else:
-        return obj
+    qa_chain = RetrievalQA.from_chain_type(
+        llm=llm,
+        retriever=retriever,
+        return_source_documents=False,
+        chain_type="stuff",
+        chain_type_kwargs={"prompt": prompt_template}
+    )
+    return qa_chain
 
-if __name__ == "__main__":
-    main()
+# --- SECCION: EXPLORADOR DE DATOS ---
+if section == "Explorador de Datos":
+    st.subheader("📊 Datos de Rendimiento y Recuperación")
+    st.dataframe(df, use_container_width=True)
 
-def display_player_result(result: Dict[str, Any]):
-    print("\n" + "=" * 60)
-    print("📋 QUERY RESULTS")
-    print("=" * 60)
+    if st.checkbox("Mostrar descripción de columnas"):
+        st.write(df.describe(include='all'))
 
-    if "error" in result:
-        print(f"❌ Error: {result['error']}")
-        if "user_message" in result:
-            print(f"💬 Message: {result['user_message']}")
-        return
+# --- SECCION: CONSULTAS AL LLM ---
+elif section == "Consultas al LLM":
+    st.subheader("💬 Haz una pregunta sobre el rendimiento o recuperación")
+    qa = load_qa_chain()
 
-    print(f"⏱️  Processing time: {result['gemini_response']['processing_time']:.2f}s")
-    print(f"🧠 Gemini Response:\n{result['gemini_response']['text']}")
-    print(f"📊 Rows used for context: {result['context_rows']}")
+    st.markdown("**Ejemplos de preguntas que puedes hacer:**")
+    example_questions = [
+        "¿Cómo estuvo la recuperación del jugador el 1 de octubre de 2023?",
+        "¿Qué métricas fueron más altas el día después del partido contra Arsenal?",
+        "¿Qué día tuvo el valor más bajo en emboss_baseline_score?",
+        "¿Cuándo fue alta la aceleración/desaceleración?",
+        "¿Qué días superó los 7000 metros con baja calidad muscular?",
+        "¿Cuál fue la evolución del estado de recuperación en la última semana?"
+    ]
+
+    response = ""
+    for q in example_questions:
+        if st.button(q):
+            user_query = q
+            with st.spinner("Pensando..."):
+                response = qa.run(user_query)
+                st.success(response)
+
+    user_query = st.text_input("O escribe tu propia pregunta:")
+    if user_query:
+        with st.spinner("Pensando..."):
+            response = qa.run(user_query)
+            st.success(response)
+
+    if response:
+        if st.button("📄 Descargar respuesta en PDF"):
+            pdf = FPDF()
+            pdf.add_page()
+            pdf.set_font("Arial", size=12)
+            pdf.multi_cell(0, 10, txt=response)
+            pdf_output = "respuesta_llm.pdf"
+            pdf.output(pdf_output)
+            with open(pdf_output, "rb") as f:
+                st.download_button("Haz clic aquí para guardar el PDF", f, file_name=pdf_output)
+
+# --- SECCION: RECOMENDACIONES ---
+elif section == "Recomendaciones":
+    st.subheader("📌 Recomendaciones del sistema")
+
+    latest = df.sort_values("date", ascending=False).head(1).squeeze()
+    recs = []
+
+    if latest.get("emboss_baseline_score", 0) < -0.4:
+        recs.append("🛌 El score de recuperación está bajo. Se recomienda una sesión de recuperación activa o descanso.")
+
+    if latest.get("accel_decel_over_4_5", 0) > 50:
+        recs.append("⚠️ Alta carga acelerativa detectada. Considerar monitoreo adicional para evitar fatiga.")
+
+    if not recs:
+        recs.append("✅ Todo parece dentro de los parámetros normales. Seguir con el plan habitual.")
+
+    for r in recs:
+        st.write(r)
