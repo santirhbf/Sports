@@ -91,7 +91,7 @@ if section == "Data Explorer":
     st.subheader("📊 Performance and Recovery Data")
     uploaded_file = st.file_uploader("Upload a file", type=["csv"])
     if uploaded_file is not None:
-        df=uploaded_file
+        df = uploaded_file
     st.dataframe(df, use_container_width=True)
 
     if st.checkbox("Show metadata"):
