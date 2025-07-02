@@ -34,7 +34,7 @@ def create_vector_index():
     texts = []
     for _, row in df.iterrows():
         texto = f"The day {row['date']}, the recovery value (emboss_baseline_score) was {row.get('emboss_baseline_score', 'N/A')}. " \
-                f"The bio_baseline_composite were around {row.get('bio_baseline_composite', 'N/A')}. " \
+                f"The bio_baseline_composite was {row.get('bio_baseline_composite', 'N/A')}. " \
                 f"The travelled distance was {row.get('distance', 'N/A')} meters. " \
                 f"The number of accelerations was {row.get('accel_decel_over_4_5', 'N/A')}."
         texts.append(texto)
