@@ -15,6 +15,10 @@ CSV_PATH = "data/processed/merged_df.csv"
 DB_DIR = "chroma_db"
 MODEL_NAME = "google/flan-t5-base"  # Modelo Hugging Face instruct-compatible
 
+col1,col2,col3=st.columns(3)
+with col2:
+    st.image("data/logo.png", width=200)
+
 # --- CARGA DE DATOS ---
 st.set_page_config(page_title="CoachLens", layout="wide")
 st.title("Your personal Assistant for Elite Football Performance")
