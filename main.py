@@ -105,7 +105,7 @@ elif section == "CoachLens":
     st.subheader("💬 Ask me anything!")
     qa = load_qa_chain()
 
-    st.markdown("**Question examples:**")
+    st.markdown("**Suggested Guestions:**")
     example_questions = [
         "How was the player's recovery on the first of October of 2023?",
         "Which were the highest metrics the day after the match against Arsenal?",
