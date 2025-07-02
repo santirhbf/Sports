@@ -17,7 +17,7 @@ MODEL_NAME = "google/flan-t5-base"
 
 col1,col2,col3=st.columns(3)
 with col2:
-    st.image("data/logo.png", width=200)
+    st.image("data/logo.png", width=300)
 
 # --- CARGA DE DATOS ---
 st.set_page_config(page_title="CoachLens", layout="wide")
