@@ -10,6 +10,8 @@ import torch
 import os
 from fpdf import FPDF
 
+os.environ["PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION"] = "python"
+
 # --- CONFIGURACION ---
 CSV_PATH = "data/processed/merged_df.csv"
 DB_DIR = "chroma_db"
