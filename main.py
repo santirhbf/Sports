@@ -11,7 +11,7 @@ import os
 from fpdf import FPDF
 
 # --- CONFIGURACION ---
-CSV_PATH = "merged_df.csv"
+CSV_PATH = "data/processed/merged_df.csv"
 DB_DIR = "chroma_db"
 MODEL_NAME = "google/flan-t5-base"  # Modelo Hugging Face instruct-compatible
 
